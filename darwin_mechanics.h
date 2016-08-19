@@ -1,3 +1,6 @@
 #include <Cocoa/Cocoa.h>
 
-char *FetchURL(char *url);
+void *FetchURL(char *url);
+char *StatusText(void *results);
+int StatusCode(void *results);
+long long ContentLength(void *results);

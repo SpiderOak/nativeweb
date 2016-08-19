@@ -1,10 +1,27 @@
 #import <Foundation/Foundation.h>
 #include "darwin_mechanics.h"
 
-    
-NSData *getData(char *url) {
-    NSURL *my_url = [NSURL URLWithString: [NSString stringWithUTF8String:url]];
+@interface SOGetDataResults : NSObject
 
+@property (copy) NSData *data;
+@property (copy) NSURLResponse *resp;
+@property (copy) NSError *error;
+
+@end
+
+@implementation SOGetDataResults
+
+@end
+
+/*
+actually runs the URL operations for us to get data.
+INPUTS:
+   char *url: C String of the URL we want to read.
+
+*/
+SOGetDataResults* getData(NSString *url) {
+    NSURL *my_url = [NSURL URLWithString: url];
+    
     NSURLSessionConfiguration *defaultConfigObject = [NSURLSessionConfiguration defaultSessionConfiguration];
     
     NSURLSession *delegateFreeSession = [NSURLSession sessionWithConfiguration: defaultConfigObject
@@ -13,29 +30,50 @@ NSData *getData(char *url) {
 
     __block BOOL runningURL = YES;
     __block NSData *outputData;
-
-    NSRunLoop *theRL = [NSRunLoop currentRunLoop];
-
-    NSLog(@"Starting URLSession");
+    __block NSURLResponse *outputResp;
+    __block NSError *outputError;
+    
     [[delegateFreeSession dataTaskWithURL: my_url
                         completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error) {
-                NSLog(@"Got response %@ with error %@.\n", response, error);
-                outputData = [NSData dataWithData: data];
+                outputData = data;
+                outputResp = response;
+                outputError = error;
                 runningURL = NO;
             }] resume];
-
-    NSLog(@"Starting run loop...");
+    
+    NSRunLoop *theRL = [NSRunLoop currentRunLoop];
     while (runningURL && [theRL runMode: NSDefaultRunLoopMode beforeDate: [NSDate distantFuture]]);
-    NSLog(@"Run loop complete!");
 
-    return outputData;
+    SOGetDataResults *retrResults = [[SOGetDataResults alloc] init];
+
+    retrResults.data = outputData;
+    retrResults.resp = outputResp;
+    retrResults.error = outputError;
+    
+    return retrResults;
 }
 
 
-char *FetchURL(char *url) {
-    NSData *retBody;
+void *FetchURL(char *url) {
+    SOGetDataResults *results;
 
-    retBody = getData(url);
+    NSString *urlString = [NSString stringWithUTF8String: url];
+    results = getData(urlString);
+    return results;
 
-    return [retBody bytes];
+}
+
+char *StatusText(void *results) {
+    SOGetDataResults *res = results;
+    return (char *)[[NSHTTPURLResponse localizedStringForStatusCode: [(NSHTTPURLResponse *)res.resp statusCode]] UTF8String];
+}
+
+int StatusCode(void *results) {
+    SOGetDataResults *res = results;
+    return [(NSHTTPURLResponse *)res.resp statusCode];
+}
+
+long long ContentLength(void *results) {
+    SOGetDataResults *res = results;
+    return [res.resp expectedContentLength];
 }

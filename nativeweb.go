@@ -14,6 +14,5 @@ import (
 
 type NativeWeb interface {
 	// Returns data from an HTTP request using system-specific methods.
-	GetURL(req *http.Request) (*http.Response, error)
-	TestFetchURL(url string)
+	Get(url string) (*http.Response, error)
 }

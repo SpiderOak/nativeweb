@@ -10,7 +10,6 @@ package nativeweb
 import "C"
 
 import (
-	"fmt"
 	"net/http"
 	"unsafe"
 )
@@ -23,15 +22,22 @@ func New() (NativeWeb, error) {
 	return &nativeWebImpl{}, nil
 }
 
-func (impl *nativeWebImpl) GetURL(req *http.Request) (*http.Response, error) {
-	return nil, nil
-}
+func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
+	var results unsafe.Pointer
 
-func (impl *nativeWebImpl) TestFetchURL(url string) {
 	urlString := C.CString(url)
 	defer C.free(unsafe.Pointer(urlString))
 
-	data := C.GoString(C.FetchURL(urlString))
+	results = C.FetchURL(urlString)
 
-	fmt.Printf("%s\n", data)
+	goResp := http.Response{
+		Status:        C.GoString(C.StatusText(results)),
+		StatusCode:    int(C.StatusCode(results)),
+		Proto:         "HTTP/1.1", // This should be a bit more... dynamical.
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		ContentLength: int64(C.ContentLength(results)),
+	}
+
+	return &goResp, nil
 }
