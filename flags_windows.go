@@ -44,4 +44,85 @@ const (
 
 	WINHTTP_NO_ADDITIONAL_HEADERS = 0
 	WINHTTP_NO_REQUEST_DATA       = 0
+
+	WINHTTP_QUERY_MIME_VERSION              = 0
+	WINHTTP_QUERY_CONTENT_TYPE              = 1
+	WINHTTP_QUERY_CONTENT_TRANSFER_ENCODING = 2
+	WINHTTP_QUERY_CONTENT_ID                = 3
+	WINHTTP_QUERY_CONTENT_DESCRIPTION       = 4
+	WINHTTP_QUERY_CONTENT_LENGTH            = 5
+	WINHTTP_QUERY_CONTENT_LANGUAGE          = 6
+	WINHTTP_QUERY_ALLOW                     = 7
+	WINHTTP_QUERY_PUBLIC                    = 8
+	WINHTTP_QUERY_DATE                      = 9
+	WINHTTP_QUERY_EXPIRES                   = 10
+	WINHTTP_QUERY_LAST_MODIFIED             = 11
+	WINHTTP_QUERY_MESSAGE_ID                = 12
+	WINHTTP_QUERY_URI                       = 13
+	WINHTTP_QUERY_DERIVED_FROM              = 14
+	WINHTTP_QUERY_COST                      = 15
+	WINHTTP_QUERY_LINK                      = 16
+	WINHTTP_QUERY_PRAGMA                    = 17
+	WINHTTP_QUERY_VERSION                   = 18 // special: part of status line
+	WINHTTP_QUERY_STATUS_CODE               = 19 // special: part of status line
+	WINHTTP_QUERY_STATUS_TEXT               = 20 // special: part of status line
+	WINHTTP_QUERY_RAW_HEADERS               = 21 // special: all headers as ASCIIZ
+	WINHTTP_QUERY_RAW_HEADERS_CRLF          = 22 // special: all headers
+	WINHTTP_QUERY_CONNECTION                = 23
+	WINHTTP_QUERY_ACCEPT                    = 24
+	WINHTTP_QUERY_ACCEPT_CHARSET            = 25
+	WINHTTP_QUERY_ACCEPT_ENCODING           = 26
+	WINHTTP_QUERY_ACCEPT_LANGUAGE           = 27
+	WINHTTP_QUERY_AUTHORIZATION             = 28
+	WINHTTP_QUERY_CONTENT_ENCODING          = 29
+	WINHTTP_QUERY_FORWARDED                 = 30
+	WINHTTP_QUERY_FROM                      = 31
+	WINHTTP_QUERY_IF_MODIFIED_SINCE         = 32
+	WINHTTP_QUERY_LOCATION                  = 33
+	WINHTTP_QUERY_ORIG_URI                  = 34
+	WINHTTP_QUERY_REFERER                   = 35
+	WINHTTP_QUERY_RETRY_AFTER               = 36
+	WINHTTP_QUERY_SERVER                    = 37
+	WINHTTP_QUERY_TITLE                     = 38
+	WINHTTP_QUERY_USER_AGENT                = 39
+	WINHTTP_QUERY_WWW_AUTHENTICATE          = 40
+	WINHTTP_QUERY_PROXY_AUTHENTICATE        = 41
+	WINHTTP_QUERY_ACCEPT_RANGES             = 42
+	WINHTTP_QUERY_SET_COOKIE                = 43
+	WINHTTP_QUERY_COOKIE                    = 44
+	WINHTTP_QUERY_REQUEST_METHOD            = 45 // special: GET/POST etc.
+	WINHTTP_QUERY_REFRESH                   = 46
+	WINHTTP_QUERY_CONTENT_DISPOSITION       = 47
+
+	//
+	// HTTP 1.1 defined headers
+	//
+
+	WINHTTP_QUERY_AGE                   = 48
+	WINHTTP_QUERY_CACHE_CONTROL         = 49
+	WINHTTP_QUERY_CONTENT_BASE          = 50
+	WINHTTP_QUERY_CONTENT_LOCATION      = 51
+	WINHTTP_QUERY_CONTENT_MD5           = 52
+	WINHTTP_QUERY_CONTENT_RANGE         = 53
+	WINHTTP_QUERY_ETAG                  = 54
+	WINHTTP_QUERY_HOST                  = 55
+	WINHTTP_QUERY_IF_MATCH              = 56
+	WINHTTP_QUERY_IF_NONE_MATCH         = 57
+	WINHTTP_QUERY_IF_RANGE              = 58
+	WINHTTP_QUERY_IF_UNMODIFIED_SINCE   = 59
+	WINHTTP_QUERY_MAX_FORWARDS          = 60
+	WINHTTP_QUERY_PROXY_AUTHORIZATION   = 61
+	WINHTTP_QUERY_RANGE                 = 62
+	WINHTTP_QUERY_TRANSFER_ENCODING     = 63
+	WINHTTP_QUERY_UPGRADE               = 64
+	WINHTTP_QUERY_VARY                  = 65
+	WINHTTP_QUERY_VIA                   = 66
+	WINHTTP_QUERY_WARNING               = 67
+	WINHTTP_QUERY_EXPECT                = 68
+	WINHTTP_QUERY_PROXY_CONNECTION      = 69
+	WINHTTP_QUERY_UNLESS_MODIFIED_SINCE = 70
+
+	WINHTTP_HEADER_NAME_BY_INDEX = 0
+	WINHTTP_NO_OUTPUT_BUFFER     = 0
+	WINHTTP_NO_HEADER_INDEX      = 0
 )
