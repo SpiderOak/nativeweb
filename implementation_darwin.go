@@ -6,7 +6,7 @@ package nativeweb
 
 // #cgo CFLAGS: -x objective-c
 // #cgo LDFLAGS: -framework Cocoa
-// #include "darwin_mechanics.h"
+// #include "mechanics_darwin.h"
 import "C"
 
 import (

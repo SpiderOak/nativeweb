@@ -1,5 +1,5 @@
 #import <Foundation/Foundation.h>
-#include "darwin_mechanics.h"
+#import "mechanics_darwin.h"
 
 @interface SOGetDataResults : NSObject
 
@@ -18,6 +18,8 @@ actually runs the URL operations for us to get data.
 INPUTS:
    char *url: C String of the URL we want to read.
 
+OUTPUTS:
+   SOGetDataResults: Object with the results of our get, because C doesn't have multiple returns.
 */
 SOGetDataResults* getData(NSString *url) {
     NSURL *my_url = [NSURL URLWithString: url];
