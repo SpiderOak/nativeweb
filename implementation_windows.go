@@ -7,6 +7,7 @@ package nativeweb
 import (
 	"bufio"
 	"bytes"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,6 +72,48 @@ func (impl *nativeWebImpl) queryRawHeaders(hRequest uintptr) (string, error) {
 	}
 }
 
+func (impl *nativeWebImpl) getReqData(hRequest uintptr) (*bytes.Buffer, error) {
+	var dwSize uint32
+	var dwDownloaded uint32
+	var pszOutBuffer []byte
+
+	outBuf := new(bytes.Buffer)
+
+	for {
+		dwSize = 0
+
+		bResults, _, err := winHTTP().NewProc("WinHttpQueryDataAvailable").Call(
+			hRequest, uintptr(unsafe.Pointer(&dwSize)))
+		if bResults != 1 {
+			return nil, err
+		}
+
+		if dwSize < 1 {
+			break
+		}
+
+		pszOutBuffer = make([]byte, int(dwSize))
+
+		bResults, _, err = winHTTP().NewProc("WinHttpReadData").Call(hRequest,
+			uintptr(unsafe.Pointer(&pszOutBuffer[0])),
+			uintptr(dwSize),
+			uintptr(unsafe.Pointer(&dwDownloaded)))
+
+		if bResults != 1 {
+			return nil, err
+		}
+
+		if dwDownloaded < 1 {
+			break
+		}
+
+		_, _ = outBuf.Write(pszOutBuffer)
+	}
+
+	return outBuf, nil
+
+}
+
 func (impl *nativeWebImpl) makeSession(req *http.Request) (uintptr, error) {
 	hSession, _, err := winHTTP().NewProc("WinHttpOpen").Call(
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("NativeWeb WinHTTP"))),
@@ -115,11 +158,10 @@ func (impl *nativeWebImpl) makeConnection(req *http.Request, hSession uintptr) (
 }
 
 func (impl *nativeWebImpl) makeRequest(req *http.Request, hConnect uintptr) (uintptr, error) {
-
 	hRequest, _, err := winHTTP().NewProc("WinHttpOpenRequest").Call(
 		hConnect,
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(req.Method))),
-		0, // Object Name
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(req.URL.RequestURI()))), // Object Name
 		0, // HTTP version (default 1.1)
 		0, // Referrer
 		0, // Accept Types
@@ -128,7 +170,7 @@ func (impl *nativeWebImpl) makeRequest(req *http.Request, hConnect uintptr) (uin
 	return hRequest, err
 }
 
-func (impl *nativeWebImpl) runRequest(req *http.Request) (*string, *string, error) {
+func (impl *nativeWebImpl) runRequest(req *http.Request) (*string, *bytes.Buffer, error) {
 	hSession, err := impl.makeSession(req)
 	if hSession != 0 {
 		defer winHTTP().NewProc("WinHttpCloseHandle").Call(hSession)
@@ -162,18 +204,25 @@ func (impl *nativeWebImpl) runRequest(req *http.Request) (*string, *string, erro
 	}
 
 	headers, err := impl.queryRawHeaders(hRequest)
+	switch {
+	case err != nil:
+		return nil, nil, err
+	case req.Method == "HEAD":
+		return &headers, nil, nil
+	}
 
+	data, err := impl.getReqData(hRequest)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &headers, nil, nil
+	return &headers, data, nil
 }
 
 func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 
-	headers, _, err := impl.runRequest(req)
+	headers, data, err := impl.runRequest(req)
 
 	if err != nil {
 		return nil, err
@@ -185,5 +234,6 @@ func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
 		return nil, err
 	}
 
+	goResp.Body = ioutil.NopCloser(data)
 	return goResp, nil
 }
