@@ -16,10 +16,6 @@ import (
 
 // We want winhttp to be a singleton to avoid opening up too many
 // handles to the same DLL.
-
-// TODO: if thread safety becomes an issue here, each nativeweb
-// client's just going to get its own winhttp DLL handle and we'll
-// move on with life.
 var winhttp *windows.LazyDLL
 var once sync.Once
 
@@ -87,6 +83,7 @@ func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
 	// give us the data we're looking for.
 
 	var dwSize uint32
+	var lpOutBuffer []uint16
 	if bResults == 1 {
 		_, _, err := winHTTP().NewProc("WinHttpQueryHeaders").Call(hRequest,
 			uintptr(WINHTTP_QUERY_RAW_HEADERS_CRLF),
@@ -98,7 +95,19 @@ func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
 		fmt.Printf("Error is %d: %v\n", err, err)
 
 		if err == windows.ERROR_INSUFFICIENT_BUFFER {
+			lpOutBuffer = make([]uint16, int(dwSize))
+
+			bResults, _, err = winHTTP().NewProc("WinHttpQueryHeaders").Call(hRequest,
+				uintptr(WINHTTP_QUERY_RAW_HEADERS_CRLF),
+				uintptr(WINHTTP_HEADER_NAME_BY_INDEX),
+				uintptr(unsafe.Pointer(&lpOutBuffer[0])),
+				uintptr(unsafe.Pointer(&dwSize)),
+				uintptr(WINHTTP_NO_HEADER_INDEX))
 		}
+	}
+
+	if bResults == 1 {
+		fmt.Printf("%v\n", syscall.UTF16ToString(lpOutBuffer))
 	}
 
 	fmt.Printf("bResults %d error: %d\n", bResults, err)
