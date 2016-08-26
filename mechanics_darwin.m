@@ -79,3 +79,15 @@ long long ContentLength(void *results) {
     SOGetDataResults *res = results;
     return [res.resp expectedContentLength];
 }
+
+long DataBytesSize(void *results) {
+    SOGetDataResults *res = results;
+
+    return [res.data length];
+}
+
+void *DataBytes(void *results) {
+    SOGetDataResults *res = results;
+
+    return [res.data bytes];
+}

@@ -10,6 +10,7 @@ package nativeweb
 import "C"
 
 import (
+	"bufio"
 	"bytes"
 	"io/ioutil"
 	"net/http"
@@ -33,6 +34,16 @@ func (impl *nativeWebImpl) Do(req *http.Request) (*http.Response, error) {
 		ContentLength: int64(C.ContentLength(results)),
 		Body:          ioutil.NopCloser(new(bytes.Buffer)),
 	}
+
+	bLen := C.DataBytesSize(results)
+
+	if bLen != goResp.ContentLength {
+		return nil, Error("Incomplete download")
+	}
+
+	b := unsafe.Pointer(C.DataBytes(results))
+	bBytes := bytes.NewBuffer(C.GoBytes(b, C.int(bLen)))
+	goResp.Body = ioutil.NopCloser(bufio.NewReader(bBytes))
 
 	return &goResp, nil
 }
