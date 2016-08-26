@@ -16,18 +16,10 @@ import (
 	"unsafe"
 )
 
-type nativeWebImpl struct {
-}
-
-// New returns an entity that implements the NativeWeb interface.
-func New() (NativeWeb, error) {
-	return &nativeWebImpl{}, nil
-}
-
-func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
+func (impl *nativeWebImpl) Do(req *http.Request) (*http.Response, error) {
 	var results unsafe.Pointer
 
-	urlString := C.CString(url)
+	urlString := C.CString(req.URL.String())
 	defer C.free(unsafe.Pointer(urlString))
 
 	results = C.FetchURL(urlString)
