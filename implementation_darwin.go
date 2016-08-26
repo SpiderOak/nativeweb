@@ -10,6 +10,8 @@ package nativeweb
 import "C"
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"unsafe"
 )
@@ -37,6 +39,7 @@ func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		ContentLength: int64(C.ContentLength(results)),
+		Body:          ioutil.NopCloser(new(bytes.Buffer)),
 	}
 
 	return &goResp, nil

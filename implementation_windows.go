@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,13 +29,6 @@ func winHTTP() *windows.LazyDLL {
 		winhttp = windows.NewLazySystemDLL("winhttp.dll")
 	})
 	return winhttp
-}
-
-type nativeWebImpl struct {
-}
-
-func New() (NativeWeb, error) {
-	return &nativeWebImpl{}, nil
 }
 
 func (impl *nativeWebImpl) queryRawHeaders(hRequest uintptr) (string, error) {
@@ -125,24 +119,25 @@ func (impl *nativeWebImpl) makeSession(req *http.Request) (uintptr, error) {
 	return hSession, err
 }
 
-func (impl *nativeWebImpl) makeConnection(req *http.Request, hSession uintptr) (uintptr, error) {
+func mungeHostAndPort(u *url.URL) (string, int, error) {
 	// Golang considers the port part of the hostname, whereas WinHTTP
 	// doesn't. We need to split apart the host in the request, as well
-	// as set default ports if none are specified.
+	// as set default port if none is specified.
+
 	var port int
 	var host string
 	var err error
 
-	res := strings.Split(req.URL.Host, ":")
+	res := strings.Split(u.Host, ":")
 	switch {
 	case len(res) != 1:
 		port, err = strconv.Atoi(res[1])
 		if err != nil {
-			return 0, err
+			return "", 0, err
 		}
-	case req.URL.Scheme == "https":
+	case u.Scheme == "https":
 		port = 443
-	case req.URL.Scheme == "http":
+	case u.Scheme == "http":
 		port = 80
 	case true:
 		port = 0 // WinHTTP will pick automagically depending on if
@@ -150,6 +145,15 @@ func (impl *nativeWebImpl) makeConnection(req *http.Request, hSession uintptr) (
 	}
 
 	host = res[0]
+
+	return host, port, nil
+}
+
+func (impl *nativeWebImpl) makeConnection(req *http.Request, hSession uintptr) (uintptr, error) {
+	host, port, err := mungeHostAndPort(req.URL)
+	if err != nil {
+		return 0, err
+	}
 
 	hConnect, _, err := winHTTP().NewProc("WinHttpConnect").Call(hSession,
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(host))),
@@ -161,8 +165,8 @@ func (impl *nativeWebImpl) makeRequest(req *http.Request, hConnect uintptr) (uin
 	hRequest, _, err := winHTTP().NewProc("WinHttpOpenRequest").Call(
 		hConnect,
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(req.Method))),
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(req.URL.RequestURI()))), // Object Name
-		0, // HTTP version (default 1.1)
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(req.URL.RequestURI()))),
+		0, // HTTP version (default 1.1, HTTP 2 only available with Win10 build 1511 and later)
 		0, // Referrer
 		0, // Accept Types
 		uintptr(WINHTTP_FLAG_SECURE))
@@ -219,9 +223,7 @@ func (impl *nativeWebImpl) runRequest(req *http.Request) (*string, *bytes.Buffer
 	return &headers, data, nil
 }
 
-func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
-
+func (impl *nativeWebImpl) Do(req *http.Request) (*http.Response, error) {
 	headers, data, err := impl.runRequest(req)
 
 	if err != nil {
