@@ -12,10 +12,30 @@ import "C"
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"unsafe"
 )
+
+type nativeWebImpl struct {
+	urlSession unsafe.Pointer
+}
+
+// New creates a fresh instance of the nativeWebImpl type, implementing the NativeWeb API.
+func New() (NativeWeb, error) {
+	impl := nativeWebImpl{
+		urlSession: C.OpenSession(),
+	}
+
+	// Make sure we release the urlSession if the NativeWeb client gets GC'ed.
+	runtime.SetFinalizer(&impl, func(n *nativeWebImpl) {
+		C.Release(n.urlSession)
+	})
+
+	return &impl, nil
+}
 
 func (impl *nativeWebImpl) Do(req *http.Request) (*http.Response, error) {
 	var results unsafe.Pointer
@@ -23,7 +43,11 @@ func (impl *nativeWebImpl) Do(req *http.Request) (*http.Response, error) {
 	urlString := C.CString(req.URL.String())
 	defer C.free(unsafe.Pointer(urlString))
 
-	results = C.FetchURL(urlString)
+	results = C.FetchURL(impl.urlSession, urlString)
+	bLen := C.DataBytesSize(results)
+
+	b := unsafe.Pointer(C.DataBytes(results))
+	bBytes := bytes.NewBuffer(C.GoBytes(b, C.int(bLen)))
 
 	goResp := http.Response{
 		Status:        C.GoString(C.StatusText(results)),
@@ -32,18 +56,12 @@ func (impl *nativeWebImpl) Do(req *http.Request) (*http.Response, error) {
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		ContentLength: int64(C.ContentLength(results)),
-		Body:          ioutil.NopCloser(new(bytes.Buffer)),
+		Body:          ioutil.NopCloser(bufio.NewReader(bBytes)),
 	}
 
-	bLen := C.DataBytesSize(results)
-
-	if bLen != goResp.ContentLength {
-		return nil, Error("Incomplete download")
+	if int64(bLen) != goResp.ContentLength {
+		return nil, errors.New("Incomplete download")
 	}
-
-	b := unsafe.Pointer(C.DataBytes(results))
-	bBytes := bytes.NewBuffer(C.GoBytes(b, C.int(bLen)))
-	goResp.Body = ioutil.NopCloser(bufio.NewReader(bBytes))
 
 	return &goResp, nil
 }

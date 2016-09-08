@@ -1,6 +1,8 @@
 // +build windows
 
 // Windows-specific implementation of the nativeweb client.
+// Purposefully matching some elements of style to match MSDN samples
+// instead of Go style to make it easier to follow documentation.
 
 package nativeweb
 
@@ -23,6 +25,13 @@ import (
 // handles to the same DLL.
 var winhttp *windows.LazyDLL
 var once sync.Once
+
+type nativeWebImpl {
+}
+
+func New() (NativeWeb, error) {
+	return &nativeWebImpl{}, nil
+}
 
 func winHTTP() *windows.LazyDLL {
 	once.Do(func() {

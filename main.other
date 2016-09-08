@@ -1,0 +1,16 @@
+#import <Foundation/Foundation.h>
+#import <Cocoa/Cocoa.h>
+
+#include "darwin_mechanics.h"
+
+int main(int argc, const char * argv[]) {
+    
+    @autoreleasepool {
+        void *data = FetchURL("https://spideroak.com/");
+        
+        NSLog(@"%s", (char *)data->bytes();
+    }
+
+    return 0;
+
+}

@@ -6,13 +6,6 @@ import (
 	"net/url"
 )
 
-type nativeWebImpl struct {
-}
-
-func New() (NativeWeb, error) {
-	return &nativeWebImpl{}, nil
-}
-
 func (impl *nativeWebImpl) Get(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

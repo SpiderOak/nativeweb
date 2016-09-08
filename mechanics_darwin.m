@@ -21,46 +21,51 @@ INPUTS:
 OUTPUTS:
    SOGetDataResults: Object with the results of our get, because C doesn't have multiple returns.
 */
-SOGetDataResults* getData(NSString *url) {
-    NSURL *my_url = [NSURL URLWithString: url];
-    
+SOGetDataResults* getData(NSURLSession *session, NSString *url) {
+    @autoreleasepool {
+        NSURL *my_url = [NSURL URLWithString: url];
+
+        __block BOOL runningURL = YES;
+        __block NSData *outputData;
+        __block NSURLResponse *outputResp;
+        __block NSError *outputError;
+        
+        [[session dataTaskWithURL: my_url
+                            completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error) {
+                    outputData = data;
+                    outputResp = response;
+                    outputError = error;
+                    runningURL = NO;
+                }] resume];
+        
+        NSRunLoop *theRL = [NSRunLoop currentRunLoop];
+        while (runningURL && [theRL runMode: NSDefaultRunLoopMode beforeDate: [NSDate distantFuture]]);
+
+        SOGetDataResults *retrResults = [[SOGetDataResults alloc] init];
+
+        retrResults.data = outputData;
+        retrResults.resp = outputResp;
+        retrResults.error = outputError;
+        
+        return retrResults;
+    }
+}
+
+void *OpenSession() {
     NSURLSessionConfiguration *defaultConfigObject = [NSURLSessionConfiguration defaultSessionConfiguration];
-    
+
     NSURLSession *delegateFreeSession = [NSURLSession sessionWithConfiguration: defaultConfigObject
                                                                       delegate: nil
                                                                  delegateQueue: [NSOperationQueue mainQueue]];
-
-    __block BOOL runningURL = YES;
-    __block NSData *outputData;
-    __block NSURLResponse *outputResp;
-    __block NSError *outputError;
-    
-    [[delegateFreeSession dataTaskWithURL: my_url
-                        completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error) {
-                outputData = data;
-                outputResp = response;
-                outputError = error;
-                runningURL = NO;
-            }] resume];
-    
-    NSRunLoop *theRL = [NSRunLoop currentRunLoop];
-    while (runningURL && [theRL runMode: NSDefaultRunLoopMode beforeDate: [NSDate distantFuture]]);
-
-    SOGetDataResults *retrResults = [[SOGetDataResults alloc] init];
-
-    retrResults.data = outputData;
-    retrResults.resp = outputResp;
-    retrResults.error = outputError;
-    
-    return retrResults;
+    return (void *)delegateFreeSession;
 }
 
-
-void *FetchURL(char *url) {
+void *FetchURL(void *session, char *url) {
     SOGetDataResults *results;
+    NSURLSession *s = (NSURLSession *)session;
 
     NSString *urlString = [NSString stringWithUTF8String: url];
-    results = getData(urlString);
+    results = getData(session, urlString);
     return results;
 
 }
@@ -89,5 +94,11 @@ long DataBytesSize(void *results) {
 void *DataBytes(void *results) {
     SOGetDataResults *res = results;
 
-    return [res.data bytes];
+    return (void *)[res.data bytes];
+}
+
+void Release(void *obj) {
+    NSObject *o = (NSObject *)obj;
+
+    [o release];
 }
